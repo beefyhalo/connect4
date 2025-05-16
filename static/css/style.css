@@ -45,6 +45,22 @@ body {
   background-color: #dfe6e9;
 }
 
+/* Highlight the winning line */
+.cell.highlight {
+  border: 3px solid #2ecc71;
+  animation: pulse 1s infinite alternate;
+}
+
+/* Pulse animation for the winning line */
+@keyframes pulse {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.1);
+  }
+}
+
 .message {
   font-size: 20px;
   margin-bottom: 10px;

@@ -25,11 +25,15 @@ setupGui :: Window -> UI ()
 setupGui window = void mdo
   -- Message element and grid rendering
   message <- UI.div #. "message" # sink UI.text (statusMessage . status <$> bGameState)
-  gridEl <- UI.div #. "grid" # sink items (renderGrid triggerMove . grid <$> bGameState)
+  gridEl <- UI.div #. "grid" # sink items bRenderedGrid
   restartBtn <- UI.button #+ [string "Restart"]
 
   -- Reactive game state
   (eventMove, triggerMove) <- liftIO newEvent
+  let bRenderedGrid =
+        renderGrid triggerMove
+          <$> fmap (winningLine . status) bGameState
+          <*> fmap grid bGameState
   bGameState <-
     accumB initialState $
       concatenate
@@ -43,7 +47,7 @@ setupGui window = void mdo
 -- Status message based on game status
 statusMessage :: GameStatus -> String
 statusMessage (InProgress player) = "Player " ++ show player ++ "'s turn."
-statusMessage (Victory player) = "Player " ++ show player ++ " wins!"
+statusMessage (Victory player _) = "Player " ++ show player ++ " wins!"
 statusMessage Draw = "It's a draw!"
 
 -- Render a cell in the grid
@@ -59,14 +63,27 @@ playerClass (Just Yellow) = "yellow"
 playerClass Nothing = "empty"
 
 -- Render the entire grid
-renderGrid :: (Column -> IO ()) -> Grid -> [UI Element]
-renderGrid triggerMove grid = [renderRow row r | (row, r) <- zip (toLists grid) [1 ..]]
+renderGrid :: (Column -> IO ()) -> Maybe WinningLine -> Grid -> [UI Element]
+renderGrid triggerMove mWinningLine grid = [renderRow row r | (row, r) <- zip (toLists grid) [1 ..]]
   where
     renderRow :: [Maybe Player] -> Row -> UI Element
-    renderRow rowData _ =
+    renderRow rowData r =
       UI.div
         #. "row"
-        #+ [createCell triggerMove c player | (player, c) <- zip rowData [1 ..]]
+        #+ [createCell triggerMove (r, c) player | (player, c) <- zip rowData [1 ..]]
+
+    -- Create a cell, adding a highlight class if it's in the winning line
+    createCell :: (Column -> IO ()) -> Position -> Maybe Player -> UI Element
+    createCell triggerMove (r, c) player = do
+      let baseClass = "cell " ++ playerClass player
+          highlightClass = if isWinningCell mWinningLine then " highlight" else ""
+          -- Helper to check if a cell is in the winning line
+          isWinningCell :: Maybe WinningLine -> Bool
+          isWinningCell (Just line) = (r, c) `elem` line
+          isWinningCell Nothing = False
+      cell <- UI.div #. (baseClass ++ highlightClass)
+      on UI.click cell \_ -> liftIO $ triggerMove c
+      pure cell
 
 items :: WriteAttr Element [UI Element]
 items = mkWriteAttr $ \i el -> void do element el # set children [] #+ i

@@ -18,6 +18,8 @@ type Position = (Row, Column)
 
 type Grid = Matrix (Maybe Player)
 
+type WinningLine = [Position]
+
 -- Game state data type
 data GameState = GameState
   { grid :: Grid,
@@ -27,9 +29,13 @@ data GameState = GameState
 
 data GameStatus
   = InProgress Player -- The current player whose turn it is
-  | Victory Player -- The player who won
+  | Victory Player WinningLine -- The player who won and the winning line
   | Draw -- The game ended in a draw
   deriving (Eq, Show)
+
+winningLine :: GameStatus -> Maybe WinningLine
+winningLine (Victory _ line) = Just line
+winningLine _ = Nothing
 
 -- Initial game state
 initialState :: GameState
