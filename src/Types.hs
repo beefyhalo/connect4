@@ -33,6 +33,8 @@ data GameStatus
   | Draw -- The game ended in a draw
   deriving (Eq, Show)
 
+data Side = LeftSide | RightSide deriving (Eq, Show)
+
 winningLine :: GameStatus -> Maybe WinningLine
 winningLine (Victory _ line) = Just line
 winningLine _ = Nothing

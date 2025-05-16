@@ -26,28 +26,24 @@ applyMove col state =
 -- Drop a piece in the chosen column
 dropPiece :: Player -> Column -> Grid -> Maybe (Grid, Position)
 dropPiece player col grid =
-  case findEmpty (nrows grid) of
-    Just row -> let pos = (row, col) in Just (setElem (Just player) pos grid, pos)
-    Nothing -> Nothing
+  findEmpty (nrows grid)
   where
     findEmpty 0 = Nothing
     findEmpty row
-      | isNothing (getElem row col grid) = Just row
+      | isNothing (getElem row col grid) = Just (setElem (Just player) (row, col) grid, (row, col))
       | otherwise = findEmpty (row - 1)
-
-data Side = LeftSide | RightSide deriving (Eq, Show)
 
 -- Drop a piece from the chosen side
 _dropPieceFromSide :: Player -> Side -> Row -> Grid -> Maybe (Grid, Position)
 _dropPieceFromSide player side row grid =
   case side of
-    LeftSide -> findEmpty (1, row)
-    RightSide -> findEmpty (ncols grid, row)
+    LeftSide -> findEmpty row 1
+    RightSide -> findEmpty row (ncols grid)
   where
-    findEmpty (col, r)
+    findEmpty r col
       | isNothing (getElem r col grid) = Just (setElem (Just player) (r, col) grid, (r, col))
-      | side == LeftSide && col < ncols grid = findEmpty (col + 1, r)
-      | side == RightSide && col > 1 = findEmpty (col - 1, r)
+      | side == LeftSide && col < ncols grid = findEmpty r (col + 1)
+      | side == RightSide && col > 1 = findEmpty r (col - 1)
       | otherwise = Nothing
 
 -- Check if the given player has a line of 4, return the winning line if found
