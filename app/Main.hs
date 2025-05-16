@@ -50,13 +50,6 @@ statusMessage (InProgress player) = "Player " ++ show player ++ "'s turn."
 statusMessage (Victory player _) = "Player " ++ show player ++ " wins!"
 statusMessage Draw = "It's a draw!"
 
--- Render a cell in the grid
-createCell :: (Column -> IO ()) -> Column -> Maybe Player -> UI Element
-createCell triggerMove col player = do
-  cell <- UI.div #. ("cell " ++ playerClass player)
-  on UI.click cell \_ -> liftIO $ triggerMove col
-  pure cell
-
 playerClass :: Maybe Player -> String
 playerClass (Just Red) = "red"
 playerClass (Just Yellow) = "yellow"
@@ -70,11 +63,11 @@ renderGrid triggerMove mWinningLine grid = [renderRow row r | (row, r) <- zip (t
     renderRow rowData r =
       UI.div
         #. "row"
-        #+ [createCell triggerMove (r, c) player | (player, c) <- zip rowData [1 ..]]
+        #+ [createCell (r, c) player | (player, c) <- zip rowData [1 ..]]
 
     -- Create a cell, adding a highlight class if it's in the winning line
-    createCell :: (Column -> IO ()) -> Position -> Maybe Player -> UI Element
-    createCell triggerMove (r, c) player = do
+    createCell :: Position -> Maybe Player -> UI Element
+    createCell (r, c) player = do
       let baseClass = "cell " ++ playerClass player
           highlightClass = if isWinningCell mWinningLine then " highlight" else ""
           -- Helper to check if a cell is in the winning line
