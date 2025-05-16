@@ -4,7 +4,6 @@
 
 module Game (GameStatus, initialState, applyMove) where
 
-import Data.Foldable (find)
 import Data.Matrix (Matrix (..), getElem, safeGet, setElem)
 import Data.Maybe (isNothing, listToMaybe, mapMaybe)
 import Types
@@ -27,11 +26,29 @@ applyMove col state =
 -- Drop a piece in the chosen column
 dropPiece :: Player -> Column -> Grid -> Maybe (Grid, Position)
 dropPiece player col grid =
-  case find (isNothing . snd) rows of
-    Just (row, _) -> let pos = (row, col) in Just (setElem (Just player) pos grid, pos)
+  case findEmpty (nrows grid) of
+    Just row -> let pos = (row, col) in Just (setElem (Just player) pos grid, pos)
     Nothing -> Nothing
   where
-    rows = [(row, getElem row col grid) | row <- [nrows grid, nrows grid - 1 .. 1]]
+    findEmpty 0 = Nothing
+    findEmpty row
+      | isNothing (getElem row col grid) = Just row
+      | otherwise = findEmpty (row - 1)
+
+data Side = LeftSide | RightSide deriving (Eq, Show)
+
+-- Drop a piece from the chosen side
+_dropPieceFromSide :: Player -> Side -> Row -> Grid -> Maybe (Grid, Position)
+_dropPieceFromSide player side row grid =
+  case side of
+    LeftSide -> findEmpty (1, row)
+    RightSide -> findEmpty (ncols grid, row)
+  where
+    findEmpty (col, r)
+      | isNothing (getElem r col grid) = Just (setElem (Just player) (r, col) grid, (r, col))
+      | side == LeftSide && col < ncols grid = findEmpty (col + 1, r)
+      | side == RightSide && col > 1 = findEmpty (col - 1, r)
+      | otherwise = Nothing
 
 -- Check if the given player has a line of 4, return the winning line if found
 checkVictory :: Player -> Position -> Grid -> Maybe WinningLine
